@@ -24,3 +24,4 @@ DB[:users].insert(name: 'John', age: 25)
 DB[:users].each do |user|
   puts "#{user[:name]} is #{user[:age]} years old"
 end
+
