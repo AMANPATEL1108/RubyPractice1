@@ -1,0 +1,137 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ruby CRUD Frontend</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+    input {
+      padding: 5px;
+      margin: 5px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 10px;
+      text-align: left;
+    }
+    button {
+      margin: 2px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Simple CRUD App</h1>
+
+  <h2 id="formTitle">Add New User</h2>
+  <input type="text" id="name" placeholder="Name">
+  <input type="email" id="email" placeholder="Email">
+  <input type="hidden" id="editId">
+  <button onclick="submitForm()">Save</button>
+
+  <h2>All Users</h2>
+  <table id="itemsTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Items will appear here -->
+    </tbody>
+  </table>
+
+  <script>
+    const API_URL = 'http://localhost:4567/items';
+
+    async function loadItems() {
+      const res = await fetch(API_URL);
+      const items = await res.json();
+      const table = document.querySelector("#itemsTable tbody");
+      table.innerHTML = "";
+
+      items.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.name}</td>
+          <td>${item.email}</td>
+          <td>
+            <button onclick="startEdit(${item.id}, '${item.name}', '${item.email}')">Edit</button>
+            <button onclick="deleteItem(${item.id})">Delete</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    function startEdit(id, name, email) {
+      document.getElementById("formTitle").innerText = "Edit User";
+      document.getElementById("name").value = name;
+      document.getElementById("email").value = email;
+      document.getElementById("editId").value = id;
+    }
+
+    async function submitForm() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const id = document.getElementById("editId").value;
+
+      if (!name || !email) {
+        alert("Both fields are required.");
+        return;
+      }
+
+      if (id) {
+        await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email })
+        });
+      } else {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email })
+        });
+      }
+
+      clearForm();
+      loadItems();
+    }
+
+    function clearForm() {
+      document.getElementById("name").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("editId").value = "";
+      document.getElementById("formTitle").innerText = "Add New User";
+    }
+
+    async function deleteItem(id) {
+      if (!confirm("Are you sure you want to delete this user?")) return;
+
+      await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+      });
+
+      loadItems();
+    }
+
+    loadItems();
+  </script>
+
+</body>
+</html>
