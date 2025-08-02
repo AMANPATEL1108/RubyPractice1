@@ -1,0 +1,117 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Address Book CRUD</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input { padding: 5px; margin: 4px; width: 200px; }
+    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+    th, td { border: 1px solid #999; padding: 10px; }
+    button { padding: 5px 10px; margin: 2px; }
+  </style>
+</head>
+<body>
+
+  <h2 id="formTitle">Add Person</h2>
+  <input type="text" id="name" placeholder="Name">
+  <input type="email" id="email" placeholder="Email">
+  <input type="text" id="address" placeholder="Address">
+  <input type="text" id="street" placeholder="Street">
+  <input type="text" id="house_number" placeholder="House Number">
+  <input type="hidden" id="editId">
+  <br>
+  <button onclick="submitForm()">Save</button>
+
+  <h2>People List</h2>
+  <table id="peopleTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Email</th><th>Address</th><th>Street</th><th>House #</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API = "http://localhost:4567/people";
+
+    async function loadPeople() {
+      const res = await fetch(API);
+      const people = await res.json();
+      const tbody = document.querySelector("#peopleTable tbody");
+      tbody.innerHTML = "";
+
+      people.forEach(p => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.email}</td>
+          <td>${p.address}</td>
+          <td>${p.street}</td>
+          <td>${p.house_number}</td>
+          <td>
+            <button onclick="editPerson(${p.id}, '${p.name}', '${p.email}', '${p.address}', '${p.street}', '${p.house_number}')">Edit</button>
+            <button onclick="deletePerson(${p.id})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function editPerson(id, name, email, address, street, house_number) {
+      document.getElementById("formTitle").innerText = "Edit Person";
+      document.getElementById("name").value = name;
+      document.getElementById("email").value = email;
+      document.getElementById("address").value = address;
+      document.getElementById("street").value = street;
+      document.getElementById("house_number").value = house_number;
+      document.getElementById("editId").value = id;
+    }
+
+    async function submitForm() {
+      const data = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        address: document.getElementById("address").value,
+        street: document.getElementById("street").value,
+        house_number: document.getElementById("house_number").value
+      };
+      const id = document.getElementById("editId").value;
+
+      if (id) {
+        await fetch(`${API}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+      } else {
+        await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+      }
+
+      clearForm();
+      loadPeople();
+    }
+
+    function clearForm() {
+      document.getElementById("formTitle").innerText = "Add Person";
+      ["name", "email", "address", "street", "house_number", "editId"].forEach(id => document.getElementById(id).value = "");
+    }
+
+    async function deletePerson(id) {
+      if (!confirm("Delete this entry?")) return;
+      await fetch(`${API}/${id}`, { method: "DELETE" });
+      loadPeople();
+    }
+
+    loadPeople();
+  </script>
+
+</body>
+</html>
